@@ -346,7 +346,7 @@
   (and
    (e/have fn? f)
    (e/have not-empty out)
-   (e/have map? out))
+   (e/have set? out))
   (when (resolver-exists? id)
     (timbre/warn "pathos overwriting resolver:" id))
   (e/catching (graph-traversal :mem/del :mem/all))
@@ -359,7 +359,7 @@
                           :ms     0.0
                           :ncalls 0
                           :memo?  memo?})
-  (doseq [[k _] out]
+  (doseq [k out]
     (swap! cache_ update k (fn [m] (-> (assoc m ::id k :type :node)
                                        (update :f (fnil conj #{}) id)))))
   id)
@@ -384,6 +384,10 @@
   (let [id (e/merge-keywords [(str *ns*) x "eq" y])]
     `(reg-resolver ~id [{~'v ~y}] {~x ~'v})))
 
+(defn evict-resolver
+  [id]
+  (swap! cache_ dissoc id)
+  id)
 (defn update-time!
   "updates the execution cost of the resolver"
   [id ms*]
