@@ -228,7 +228,12 @@
     {?id {:out {~entity _}}}
     ?id))
 
-(defn entity->resolver
+(comment
+  (entity->resolvers :a)
+  ;; => (:ribelo.pathos/a)
+  )
+
+(defn entity->fastest-resolver
   "finds the fastest resolver that produces the given entity"
   [entity]
   (->> (m/search @cache_
@@ -238,10 +243,10 @@
        (sort-by second)
        (ffirst)))
 
-(defn entities->resolvers
-  "finds fastest resolvers needed to produces given entities"
-  [ids]
-  (into [] (comp (map entity->resolver) (remove nil?) (distinct)) ids))
+(comment
+  (entity->fastest-resolver :a)
+  ;; => :ribelo.pathos/a
+  )
 
 (defn ->cost
   "find out the cost of the resolver"
