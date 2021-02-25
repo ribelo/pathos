@@ -341,7 +341,7 @@
       `(e/memoize ~@args (fn ~input ~@body))
       `(fn ~input ~@body))))
 
-(defn- reg-resolver*
+(defn -reg-resolver
   "writes the resolver to cache."
   [{:keys [id in out f memo?]}]
   (and
@@ -372,7 +372,7 @@
   [id & body]
   (e/have qualified-keyword? id)
   (let [{:keys [memo?]} (parse-body body)]
-    `(reg-resolver*
+    `(-reg-resolver
       {:id    ~id
        :in    ~(set (parse-input body))
        :out   ~(parse-output body)
