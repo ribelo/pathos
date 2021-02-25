@@ -138,42 +138,44 @@
   [body]
   (m/rewrite body
     (m/pred keyword? ?k)
-    {?k {}}
+    ?k
     ;;
     {(m/pred keyword? ?k) [(m/pred keyword? !ks) ...]}
-    {?k {& [(m/cata !ks) ...]}}
+    ?k
     ;;
     ((m/pred vector?) {::output [!xs ...]} & ?body)
-    {& [(m/cata !xs) ...]}
+    #{^& [(m/cata !xs) ...]}
     ;; {}
     (m/map-of (m/pred keyword? !ks) _)
-    {& [(m/cata !ks) ...]}
+    #{^& [(m/cata !ks) ...]}
     ;; (... {})
-    (_ ... ?m)
-    (m/cata ?m)))
+    (_ ... (m/cata (m/pred set? ?m)))
+    ?m
+    (_ ... (m/cata (m/pred keyword? ?m)))
+    #{?m}))
 
 (comment
   (parse-output '([x y] {::output [:a]} {:a 1 :b 2}))
-  ;; => {:a {}}
+  ;; => #{:a}
   (parse-output '([x y] {:a 1}))
-  ;; => #:ribelo.pathos{:a {}}
+  ;; => #{:a}
   (parse-output '([x y]
                   {::output [:e :f {:a [:b :c :d]}]}
                   (println "foo")))
-  ;; => {:e {}, :f {}, :a {:b {}, :c {}, :d {}}}
+  ;; => #{:e :f :a}
   (parse-output '([x y]
                   (let [a 1]
                     {:a 1})))
-  ;; => {:a {}}
+  ;; => #{:a}
   (parse-output '([x y]
                   (let [a 1]
                     (-> m :k))))
-  ;; => {:k {}}
+  ;; => #{:k}
   (parse-output '([x y]
                   (-> [{:woeid 1111} {:woeid 2222}]
                       first
                       :woeid)))
-  ;; => {:woeid {}}
+  ;; => #{:woeid}
   )
 
 (defn parse-body
