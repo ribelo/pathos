@@ -319,14 +319,16 @@
     {~id {:type :resolver}} true))
 
 ;; much faster than meander
-(defn resolver->entities
+(defn resolver-outputs
+  "specifies the data produce by the resolver"
+  [id]
+  (-> (get-in @cache_ [id :out]) keys set))
+
+(defn resolver-inputs
   "specifies the data needed by the resolver"
   [id]
   (get-in @cache_ [id :in]))
 
-(comment
-  (-> (entity->resolvers :person/last-name)
-      (resolver->entities)))
 
 (defn- resolver-fn
   "returns a parsed function with or without memoization and with parsed function
@@ -338,7 +340,7 @@
       `(e/memoize ~@args (fn ~input ~@body))
       `(fn ~input ~@body))))
 
-(defn -reg-resolver
+(defn- reg-resolver*
   "writes the resolver to cache."
   [{:keys [id in out f memo?]}]
   (and
@@ -369,7 +371,7 @@
   [id & body]
   (e/have qualified-keyword? id)
   (let [{:keys [memo?]} (parse-body body)]
-    `(-reg-resolver
+    `(reg-resolver*
       {:id    ~id
        :in    ~(set (parse-input body))
        :out   ~(parse-output body)
@@ -416,10 +418,10 @@
   [id xs]
   (m/match xs
     (m/pred map? ?m)
-    (set/superset? (set (keys ?m)) (resolver->entities id))
+    (set/superset? (set (keys ?m)) (resolver-inputs id))
     ;;
     (m/pred set? ?set)
-    (set/superset? ?set (resolver->entities id))))
+    (set/superset? ?set (resolver-inputs id))))
 
 (comment
   (satisfies-inputs? ::person {:db/id :ivan}))
