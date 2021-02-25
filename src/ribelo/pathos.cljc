@@ -292,16 +292,13 @@
   ;;  :ms       0.0,
   ;;  :in       #{:c :b}}
   )
+(defn resolver-cost
   "find out the cost of the resolver"
   ([id]
    (m/find @cache_
      {~id {:ms ?ms}}
      ?ms
-     ::empty 0))
-  ([id resolved]
-   (if-not ((set resolved) id)
-     (->cost id)
-     0.0)))
+     ::empty 0)))
 
 (defn memoized-resolver?
   "checks if the given resolver is memoized"
