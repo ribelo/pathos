@@ -248,7 +248,50 @@
   ;; => :ribelo.pathos/a
   )
 
-(defn ->cost
+(defn best-resolver
+  ([entity]
+   (best-resolver entity #{} #{entity}))
+  ([entity provided]
+   (best-resolver entity provided #{entity}))
+  ([entity provided req]
+   (let [req-count (count req)]
+     (->> (m/search @cache_
+            {?id {:out (m/and ?out (m/scan ~entity))
+                  :in  ?in
+                  :ms  ?ms}}
+            (let [out% (if (pos? req-count)
+                         (double (/ (count (set/intersection req (into provided ?out))) req-count))
+                         1.0)
+                  in%  (if (pos? (count ?in))
+                         (double (/ (count (set/intersection ?in provided)) (count ?in)))
+                         0.0)
+                  p%   (+ (/ out% 2.0) (/ in% 2.0))
+                  h    (/ ?ms p%)]
+              {:id       ?id
+               :ms       ?ms
+               :out-perc out%
+               :in-perc  in%
+               :perc     p%
+               :h        h
+               :cost     (+ ?ms h)
+               :in       ?in
+               :out      ?out}))
+          (sort-by :cost)
+          first))))
+
+(comment
+  (best-resolver :a)
+  ;; =>
+  ;; {:in-perc  0.0,
+  ;;  :out-perc 1.0,
+  ;;  :out      #{:a},
+  ;;  :h        0.0,
+  ;;  :id       :ribelo.pathos/a,
+  ;;  :perc     0.5,
+  ;;  :cost     0.0,
+  ;;  :ms       0.0,
+  ;;  :in       #{:c :b}}
+  )
   "find out the cost of the resolver"
   ([id]
    (m/find @cache_
