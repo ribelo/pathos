@@ -292,6 +292,8 @@
   ;;  :ms       0.0,
   ;;  :in       #{:c :b}}
   )
+
+
 (defn resolver-cost
   "find out the cost of the resolver"
   ([id]
@@ -328,7 +330,6 @@
   "specifies the data needed by the resolver"
   [id]
   (get-in @cache_ [id :in]))
-
 
 (defn- resolver-fn
   "returns a parsed function with or without memoization and with parsed function
@@ -388,6 +389,7 @@
   [id]
   (swap! cache_ dissoc id)
   id)
+
 (defn update-time!
   "updates the execution cost of the resolver"
   [id ms*]
