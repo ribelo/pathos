@@ -544,24 +544,19 @@
     (fn ([entities]
         (resolve entities #{}))
       ([entities provided]
-       (resolve entities provided #{}))
-      ([entities provided resolved]
        (loop [[entity & entities*] (into [] (remove provided) entities)
               req*                 #{}
               provides*            provided
-              resolved*            resolved
               chain*               []]
          (if entity
-           (let [resolver (entity->resolvers entity)]
-             (let [{:keys [chain req provides]} (graph-traversal entity provides*)
-                   req*                         (into req* req)
-                   provides*                    (into provides* provides)
-                   entities*                    (into [] (remove provides*) entities*)]
-               (recur entities*
-                      req*
-                      provides*
-                      (conj resolved* resolver)
-                      (into chain* chain))))
+           (let [{:keys [chain req provides]} (graph-traversal entity provides*)
+                 req*                         (into req* req)
+                 provides*                    (into provides* provides)
+                 entities*                    (into [] (remove provides*) entities*)]
+             (recur entities*
+                    req*
+                    provides*
+                    (into chain* chain)))
            (if (set/superset? provides* req*)
              (reverse chain*)
              (do
