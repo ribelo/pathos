@@ -584,6 +584,8 @@
 
 (comment
 
+  (eql [:a])
+
   (-reset-cache!)
   ;;          a
   ;;         / \
@@ -600,11 +602,11 @@
         [{:keys [b c]}]
         {:a (+ b c)})
       (reg-resolver ::b
-        [{:keys [e]}]
-        {:b (inc e)})
-      (reg-resolver ::c
         [{:keys [d]}]
-        {:c (inc d)})
+        {:b (inc d)})
+      (reg-resolver ::c
+        [{:keys [e]}]
+        {:c (inc e)})
       (reg-resolver ::e
         [{:keys [f]}]
         {:e (inc f)})
@@ -637,4 +639,20 @@
         {:m 5})
       (reg-resolver ::n
         []
-        {:n 10})))
+        {:n 10})
+      (reg-resolver ::all
+        []
+        {:a 0
+         :b 0
+         :c 0
+         :d 0
+         :e 0
+         :f 0
+         :g 0
+         :h 0
+         :i 0
+         :j 0
+         :k 0
+         :l 0
+         :m 0
+         :n 0})))
