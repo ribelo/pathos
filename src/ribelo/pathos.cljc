@@ -521,24 +521,22 @@
 (def graph-traversal
   (e/memoize
     (e/ms :mins 15)
-    (fn
-      ([entity] (graph-traversal entity #{}))
+    (fn ([entity] (graph-traversal entity #{}))
       ([entity provided]
-       (let [resolver (entity->resolver entity)]
-         (loop [id resolver rst [] chain [] req #{} provides provided]
-           (if id
-             (let [outputs            (resolver->entities id)
-                   inputs             (into []  (remove provided) (resolver->entities id))
-                   req*               (into req (resolver->entities id))
-                   [nxt & resolvers*] (into rst (entities->resolvers inputs))]
-               (recur nxt
-                      (vec resolvers*)
-                      (conj chain id)
-                      req*
-                      (into provides outputs)))
-             {:chain    (into [] (distinct) chain)
-              :provides provides
-              :req      req})))))))
+       (loop [entity* entity rst [] chain [] req #{entity} provides provided]
+         (if entity*
+           (let [{:keys [id in out]} (best-resolver entity* provides (into #{} (remove provides) (conj rst entity*)))
+                 provides*           (into provides out)
+                 req*                (into req in)
+                 [entity* rst]       (e/vsplit-first (into [] (comp (remove provides*) (distinct)) (into rst in)))]
+             (recur entity*
+                    rst
+                    (conj chain id)
+                    req*
+                    provides*))
+           {:chain    (into [] (distinct) chain)
+            :provides provides
+            :req      req}))))))
 
 (def resolve
   (e/memoize
