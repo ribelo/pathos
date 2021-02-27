@@ -273,7 +273,7 @@
                :in-perc  in%
                :perc     p%
                :h        h
-               :cost     (+ ?ms h)
+               :cost     (+ ^long ?ms h)
                :in       ?in
                :out      ?out}))
           (sort-by :cost)
@@ -392,10 +392,10 @@
 
 (defn update-time!
   "updates the execution cost of the resolver"
-  [id ms*]
+  [id ^long ms*]
   (e/swap-in! cache_ [id]
-    (fn [{:keys [^long ncalls ^double ms] :as m}]
-      (let [avg (/ (+ (*  ncalls ms) ms*) (inc ncalls))]
+    (fn [{:keys [^long ncalls ^long ms] :as m}]
+      (let [avg (long (/ (+ (* ncalls ms) ms*) (inc ncalls)))]
         (-> m
             (assoc :ms avg)
             (update :ncalls inc))))))
