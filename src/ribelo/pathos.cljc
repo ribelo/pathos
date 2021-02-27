@@ -266,7 +266,7 @@
                          (double (/ (count (set/intersection ?in provided)) (count ?in)))
                          0.0)
                   p%   (+ (/ out% 2.0) (/ in% 2.0))
-                  h    (/ ?ms p%)]
+                  h    (- (/ ^long ?ms p%) ^long ?ms)]
               {:id       ?id
                :ms       ?ms
                :out-perc out%
