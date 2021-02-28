@@ -323,7 +323,7 @@
 (defn resolver-outputs
   "specifies the data produce by the resolver"
   [id]
-  (-> (get-in @cache_ [id :out]) keys set))
+  (get-in @cache_ [id :out]))
 
 (defn resolver-inputs
   "specifies the data needed by the resolver"
