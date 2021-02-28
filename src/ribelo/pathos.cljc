@@ -11,7 +11,7 @@
 (m/defsyntax dbg [pattern]
   `(m/app #(doto % prn) ~pattern))
 
-(def cache_
+(def ^:private cache_
   "information about nodes and edges of the graph is written to one global atom"
   (atom {}))
 
@@ -62,7 +62,7 @@
     (m/pred string? (m/not (m/re #"^\?.+")))
     true))
 
-(defn parse-input
+(defn- parse-input
   "parses the vector of function arguments to find all edges that enter the node"
   [body]
   (m/rewrite body
@@ -101,7 +101,7 @@
   ;; => []
   )
 
-(defn fn-inputs
+(defn- fn-inputs
   "parses the vector of function arguments to determine all the data needed for
   the resolver"
   [body]
@@ -132,7 +132,7 @@
   ;; => [_m]
   )
 
-(defn parse-output
+(defn- parse-output
   "parses the function body to find all edges that escape the node"
   [body]
   (m/rewrite body
@@ -177,7 +177,7 @@
   ;; => #{:woeid}
   )
 
-(defn parse-body
+(defn- parse-body
   "parses the function body to check memoization and to find required arguments"
   [body]
   (m/rewrite body
@@ -247,11 +247,11 @@
   ;; => :ribelo.pathos/a
   )
 
-(defn best-resolver
+(defn cheapest-resolver
   ([entity]
-   (best-resolver entity #{} #{entity}))
+   (cheapest-resolver entity #{} #{entity}))
   ([entity provided]
-   (best-resolver entity provided #{entity}))
+   (cheapest-resolver entity provided #{entity}))
   ([entity provided req]
    (let [req-count (count req)]
      (->> (m/search @cache_
@@ -431,7 +431,7 @@
 (comment
   (satisfies-inputs? ::person {:db/id :ivan}))
 
-(defn process-chain
+(defn- process-chain
   "calls the individual resolvers that make up the chain"
   ([chain] (process-chain chain {}))
   ([chain args]
@@ -458,6 +458,7 @@
               (recur rst (into chans* chans)))
             (seq chans*)
             :else @m_))))))
+(defn- process-output
   "poor man's eql"
   [output selectors]
   (m/rewrite [output selectors]
@@ -527,7 +528,6 @@
                     (e/conj-some chain id)
                     req*
                     provides*))
-
            (if-not (set/superset? provides req)
              (timbre/warnf "lack of required entities %s"
                            (set/difference req provides))
