@@ -453,10 +453,18 @@
                   rst   (into [] (remove (set xs)) chain*)
                   chans (mapv (fn [id]
                                 (a/go
+                                  (let [[m* err] (e/catch-errors (execute id @m_))]
+                                    (when-not err (swap! m_ merge m*))
+                                    err)))
                               xs)]
               (recur rst (into chans* chans)))
             (seq chans*)
+            (let [[v p] (a/alts!! chans*)]
+              (if-not (e/error? v)
+                (recur chain* (into [] (remove #{p}) chans*))
+                (throw v)))
             :else @m_))))))
+
 (defn- process-output
   "poor man's eql"
   [output selectors]
