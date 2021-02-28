@@ -279,7 +279,7 @@
           first))))
 
 (comment
-  (best-resolver :a)
+  (cheapest-resolver :a)
   ;; =>
   ;; {:in-perc  0.0,
   ;;  :out-perc 1.0,
@@ -512,25 +512,21 @@
   ;;  {:l {:m 1}}}
   )
 
-(def graph-traversal
-  (e/memoize
-    (e/ms :mins 15)
+(let [conjv (fnil conj [])]
+  (def ^:private graph-traversal
     (fn ([entity] (graph-traversal entity #{}))
       ([entity provided]
        (loop [entity* entity rst [] chain [] req #{entity} provides provided]
          (if entity*
-           (let [{:keys [id in out]} (best-resolver entity* provides (into #{} (remove provides) (conj rst entity*)))
+           (let [{:keys [id in out]} (cheapest-resolver entity* provides (into #{} (remove provides) (conjv rst entity*)))
                  provides*           (into provides out)
                  req*                (into req in)
                  [entity* rst]       (e/vsplit-first (into [] (comp (remove provides*) (distinct)) (into rst in)))]
              (recur entity*
                     rst
-                    (conj chain id)
+                    (e/conj-some chain id)
                     req*
                     provides*))
-           {:chain    (into [] (distinct) chain)
-            :provides provides
-            :req      req}))))))
 
            (if-not (set/superset? provides req)
              (timbre/warnf "lack of required entities %s"
