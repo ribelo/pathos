@@ -1,6 +1,6 @@
 (ns ribelo.pathos
   (:require
-   [clojure.core.async :as a]
+   #?(:clj [clojure.core.async :as a])
    [meander.epsilon :as m]
    [taoensso.encore :as e]
    [taoensso.timbre :as timbre]
@@ -441,28 +441,23 @@
     args
     chain)))
 
-(defn process-chain-async
-  "async calls the individual resolvers that make up the chain"
-  ([chain] (process-chain-async chain {}))
-  ([chain args]
-   (let [m_ (atom args)]
-     (loop [chain* chain chans* []]
-       (e/cond
-         (seq chain*)
-         (let [xs    (filter #(satisfies-inputs? % @m_) chain*)
-               rst   (into [] (remove (set xs)) chain*)
-               chans (mapv (fn [id]
-                             (a/go
-                               (let [m* (execute id @m_)]
-                                 (swap! m_ merge m*))))
-                           xs)]
-           (recur rst (into chans* chans)))
-         (seq chans*)
-         (let [[_v p] (a/alts!! chans*)]
-           (recur chain* (into [] (remove #{p}) chans*)))
-         :else @m_)))))
-
-(defn process-output
+#?(:clj
+   (defn- process-chain-async
+     "async calls the individual resolvers that make up the chain"
+     ([chain] (process-chain-async chain {}))
+     ([chain args]
+      (let [m_ (atom args)]
+        (loop [chain* chain chans* []]
+          (e/cond
+            (seq chain*)
+            (let [xs    (filterv #(satisfies-inputs? % @m_) chain*)
+                  rst   (into [] (remove (set xs)) chain*)
+                  chans (mapv (fn [id]
+                                (a/go
+                              xs)]
+              (recur rst (into chans* chans)))
+            (seq chans*)
+            :else @m_))))))
   "poor man's eql"
   [output selectors]
   (m/rewrite [output selectors]
@@ -577,8 +572,11 @@
 (defn eql
   ([selector] (eql {} selector))
   ([args selector]
-   (some-> (resolve (selector->keys selector) (set (keys args)))
-           (process-chain-async args)
+   (some-> (-resolve (selector->keys selector) (set (keys args)))
+           #?(:clj
+              (process-chain-async args)
+              :cljs
+              (process-chain args))
            (process-output selector))))
 
 (comment
