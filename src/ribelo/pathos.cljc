@@ -298,8 +298,7 @@
   ([id]
    (m/find @cache_
      {~id {:ms ?ms}}
-     ?ms
-     ::empty 0)))
+     ?ms)))
 
 (defn memoized-resolver?
   "checks if the given resolver is memoized"
