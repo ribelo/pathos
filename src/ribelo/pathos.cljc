@@ -350,7 +350,7 @@
   (when (resolver-exists? id)
     (timbre/warn "pathos overwriting resolver:" id))
   (e/catching (graph-traversal :mem/del :mem/all))
-  (e/catching (resolve :mem/del :mem/all))
+  (e/catching (-resolve :mem/del :mem/all))
   (swap! cache_ assoc id {::id    id
                           :type   :resolver
                           :f      f
