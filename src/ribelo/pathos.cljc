@@ -1,5 +1,4 @@
 (ns ribelo.pathos
-  (:refer-clojure :exclude [resolve])
   (:require
    [clojure.core.async :as a]
    [meander.epsilon :as m]
@@ -7,7 +6,7 @@
    [taoensso.timbre :as timbre]
    [clojure.set :as set]))
 
-(declare graph-traversal resolve)
+(declare graph-traversal -resolve)
 
 (m/defsyntax dbg [pattern]
   `(m/app #(doto % prn) ~pattern))
@@ -538,33 +537,33 @@
             :provides provides
             :req      req}))))))
 
-(def resolve
-  (e/memoize
-    (e/ms :mins 15)
-    (fn ([entities]
-        (resolve entities #{}))
-      ([entities provided]
-       (loop [[entity & entities*] (into [] (remove provided) entities)
-              req*                 #{}
-              provides*            provided
-              chain*               []]
-         (if entity
-           (let [{:keys [chain req provides]} (graph-traversal entity provides*)
-                 req*                         (into req* req)
-                 provides*                    (into provides* provides)
-                 entities*                    (into [] (remove provides*) entities*)]
-             (recur entities*
-                    req*
-                    provides*
-                    (into chain* chain)))
-           (if (set/superset? provides* req*)
-             (reverse chain*)
-             (do
-               (timbre/warnf "lack of required entities %s"
-                             (set/difference req* provides*))
-               (reverse (filter #(satisfies-inputs? % provides*) chain*))))))))))
+           (if-not (set/superset? provides req)
+             (timbre/warnf "lack of required entities %s"
+                           (set/difference req provides))
+             {:chain    (into [] (distinct) chain)
+              :provides provides
+              :req      req})))))))
 
-(defn selector->keys [selector]
+(def -resolve
+  (fn ([entities]
+      (-resolve entities #{}))
+    ([entities provided]
+     (loop [[entity & entities*] (into [] (remove provided) entities)
+            req*                 #{}
+            provides*            provided
+            chain*               []]
+       (if entity
+         (let [{:keys [chain req provides]} (graph-traversal entity provides*)
+               req*                         (into req* req)
+               provides*                    (into provides* provides)
+               entities*                    (into [] (remove provides*) entities*)]
+           (recur entities*
+                  req*
+                  provides*
+                  (into chain* chain)))
+         (vec (reverse chain*)))))))
+
+(defn- selector->keys [selector]
   (m/rewrite selector
     [!sel ...]
     [(m/cata !sel) ...]
