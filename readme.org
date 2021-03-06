@@ -1,0 +1,230 @@
+#+TITLE: Readme
+
+* pathos
+
+i love the whole philosophy behind pathom. for a better understanding of what's
+going on underneath, and for fun, i decided to copy the key functionality in the
+simplest way possible.
+
+i don't believe pathos can contribute anything beyond what pathom offers, other
+than a simple enough structure and a small amount of code that anyone can
+understand it. i also do not believe that it will be suitable for use in
+production.
+
+i assume everyone who has come here knows what pathos is, so they will quickly
+pick up on the examples.
+
+** resolvers
+
+#+begin_src clojure
+; define a map for indexed access to user data
+(def users-db
+  {1 #:acme.user{:name     "Usuario 1"
+                 :email    "user@provider.com"
+                 :birthday "1989-10-25"}
+   2 #:acme.user{:name     "Usuario 2"
+                 :email    "anuser@provider.com"
+                 :birthday "1975-09-11"}})
+#+end_src
+
+resolvers can be defined identically to =pathom=, except that the registry is central and the name must be a =namedpaced key=
+
+#+begin_src clojure
+(p/reg-resolver ::article-slug
+ [{:acme.article/keys [title]}]
+ {::p/input   [:acme.article/title]
+  ::p/output  [:acme.article/slug]}
+ {:acme.article/slug (str/replace title #"[^a-z0-9A-Z]" "-")})
+#+end_src
+
+#+begin_src clojure
+(p/reg-resolver ::article-slug
+ [{:acme.article/keys [title]}]
+ {:acme.article/slug (str/replace title #"[^a-z0-9A-Z]" "-")})
+#+end_src
+
+one of the main differences from =pathom= is that =pathos= doesn't bother about the
+code inside and you can easily use let and whatever your heart desires
+
+#+begin_src clojure
+(p/reg-resolver ::article-slug
+ [{:acme.article/keys [title]}]
+ (let [slug (str/replace title #"[^a-z0-9A-Z]" "-")]
+   {:acme.article/slug slug}))
+#+end_src
+
+** invoking resolvers
+
+unlike =pathom=, resolvers in =pathos= are not records and do not extend =ifn=
+protocol, they cannot be called as regular functions, instead, there is an
+=execute=. this works just like the dispatch in =re-frame=.
+
+#+begin_src clojure
+(p/reg-resolver ::extension [{::keys [path]}]
+  {::path-ext (last (str/split path #"\."))})
+
+(p/execute ::extension {::path "foo.txt"})
+; => {::path-ext "txt"}
+#+end_src
+
+** optional inputs
+
+optional variables can be defined by simply omitting them from =::p/input=
+
+#+begin_src clojure
+(p/reg-resolver ::user-display-name
+  [{:user/keys [email name]}]
+  {::p/input [:user/email]}
+  {:user/display-name (or name email)})
+#+end_src
+
+** memoization
+
+=pathos= allows to define a resolver that will be memoized
+
+#+begin_src clojure
+(p/reg-resolver
+ ::user-display-name
+ {::p/memoize true}
+ [{:user/keys [email]}]
+ {::p/input [:user/email]}
+ {:user/display-name (or name email)})
+
+(p/reg-resolver
+ ::user-display-name
+ {::p/memoize (e/ms :mins 5)}
+ [{:user/keys [email]}]
+ {::p/input [:user/email]}
+ {:user/display-name (or name email)})
+#+end_src
+
+** async
+
+the chain of functions assigned to resolvers is always executed asynchronously
+
+#+begin_src clojure
+;;          a
+;;         / \
+;;        b   c
+;;       /     \
+;;      d - f - e
+;;        /   \
+;;       g     k
+;;      /       \
+;;   i-h         l-n
+;;     |         |
+;;     j         m
+(do
+    (reg-resolver ::a
+      [{:keys [b c]}]
+      (println :start ::a)
+      (println :finish ::a)
+      {:a (+ b c)})
+    (reg-resolver ::b
+      [{:keys [d]}]
+      (println :start ::b)
+      (println :finish ::b)
+      {:b (inc d)})
+    (reg-resolver ::c
+      [{:keys [e]}]
+      (println :start ::c)
+      (println :finish ::c)
+      {:c (inc e)})
+    (reg-resolver ::e
+      [{:keys [f]}]
+      (println :start ::e)
+      (println :finish ::e)
+      {:e (inc f)})
+    (reg-resolver ::d
+      [{:keys [f]}]
+      (println :start ::d)
+      (a/<!! (a/timeout 1000))
+      (println :finish ::d)
+      {:d (inc f)})
+    (reg-resolver ::f
+      [{:keys [g k]}]
+      (println :start ::f)
+      (println :finish ::f)
+      {:f (+ g k)})
+    (reg-resolver ::g
+      [{:keys [h]}]
+      (println :start ::g)
+      (println :finish ::g)
+      {:g (inc h)})
+    (reg-resolver ::h
+      [{:keys [i j]}]
+      (println :start ::h)
+      (println :finish ::h)
+      {:h (+ i j)})
+    (reg-resolver ::i
+      []
+      (println :start ::i)
+      (println :finish ::i)
+      {:i 5})
+    (reg-resolver ::j
+      []
+      (println :start ::j)
+      (println :finish ::j)
+      {:j 10})
+    (reg-resolver ::k
+      [{:keys [l]}]
+      (println :start ::k)
+      (println :finish ::k)
+      {:k (inc l)})
+    (reg-resolver ::l
+      [{:keys [m n]}]
+      (println :start ::l)
+      (println :finish ::l)
+      {:l (+ m n)})
+    (reg-resolver ::m
+      []
+      (println :start ::m)
+      (a/<!! (a/timeout 1000))
+      (println :finish ::m)
+      {:m 5})
+    (reg-resolver ::n
+      []
+      (println :start ::n)
+      (println :finish ::n)
+      {:n 10}))
+
+(eql [:a])
+
+;; :start   :ribelo.pathos/m
+;; :start   :ribelo.pathos/j
+;; :start   :ribelo.pathos/i
+;; :start   :ribelo.pathos/n
+;; :finish  :ribelo.pathos/n
+;; :finish  :ribelo.pathos/j
+;; :finish  :ribelo.pathos/i
+;; :start   :ribelo.pathos/h
+;; :finish  :ribelo.pathos/h
+;; :start   :ribelo.pathos/g
+;; :finish  :ribelo.pathos/g
+;; :finish  :ribelo.pathos/m
+;; :start   :ribelo.pathos/l
+;; :finish  :ribelo.pathos/l
+;; :start   :ribelo.pathos/k
+;; :finish  :ribelo.pathos/k
+;; :start   :ribelo.pathos/f
+;; :finish  :ribelo.pathos/f
+;; :start   :ribelo.pathos/d
+;; :start   :ribelo.pathos/e
+;; :finish  :ribelo.pathos/e
+;; :start   :ribelo.pathos/c
+;; :finish  :ribelo.pathos/c
+;; :finish  :ribelo.pathos/d
+;; :start   :ribelo.pathos/b
+;; :finish  :ribelo.pathos/b
+;; :start   :ribelo.pathos/a
+;; :finish  :ribelo.pathos/a
+#+end_src
+
+** prior art
+
+- [[https://github.com/wilkerlucio/pathom][pathom]]
+- [[https://github.com/day8/re-frame][re-frame]]
+
+** copyright
+
+copyright © 2020 ribelo. distributed under the unlicense.
