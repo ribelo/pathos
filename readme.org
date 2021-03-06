@@ -2,16 +2,16 @@
 
 
 
-i love the whole philosophy behind pathom. for a better understanding of what's
+i love the whole philosophy behind =pathom=. for a better understanding of what's
 going on underneath, and for fun, i decided to copy the key functionality in the
 simplest way possible.
 
-i don't believe pathos can contribute anything beyond what pathom offers, other
+i don't believe =pathos= can contribute anything beyond what =pathom= offers, other
 than a simple enough structure and a small amount of code that anyone can
 understand it. i also do not believe that it will be suitable for use in
 production.
 
-i assume everyone who has come here knows what pathos is, so they will quickly
+i assume everyone who has come here knows what =pathom= is, so they will quickly
 pick up on the examples.
 
 * resolvers
