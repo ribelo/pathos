@@ -606,61 +606,62 @@
   ;;   i-h         l-n
   ;;     |         |
   ;;     j         m
-  (do (reg-resolver ::a
-        [{:keys [b c]}]
-        {:a (+ b c)})
-      (reg-resolver ::b
-        [{:keys [d]}]
-        {:b (inc d)})
-      (reg-resolver ::c
-        [{:keys [e]}]
-        {:c (inc e)})
-      (reg-resolver ::e
-        [{:keys [f]}]
-        {:e (inc f)})
-      (reg-resolver ::d
-        [{:keys [f]}]
-        {:d (inc f)})
-      (reg-resolver ::f
-        [{:keys [g k]}]
-        {:f (+ g k)})
-      (reg-resolver ::g
-        [{:keys [h]}]
-        {:g (inc h)})
-      (reg-resolver ::h
-        [{:keys [i j]}]
-        {:h (+ i j)})
-      (reg-resolver ::i
-        []
-        {:i 5})
-      (reg-resolver ::j
-        []
-        {:j 10})
-      (reg-resolver ::k
-        [{:keys [l]}]
-        {:k (inc l)})
-      (reg-resolver ::l
-        [{:keys [m n]}]
-        {:l (+ m n)})
-      (reg-resolver ::m
-        []
-        {:m 5})
-      (reg-resolver ::n
-        []
-        {:n 10})
-      (reg-resolver ::all
-        []
-        {:a 0
-         :b 0
-         :c 0
-         :d 0
-         :e 0
-         :f 0
-         :g 0
-         :h 0
-         :i 0
-         :j 0
-         :k 0
-         :l 0
-         :m 0
-         :n 0})))
+  (do
+  (reg-resolver ::a
+                [{:keys [b c]}]
+                (println :execute :a)
+                {:a (+ b c)})
+  (reg-resolver ::b
+                [{:keys [d]}]
+                (println :execute :b)
+                {:b (inc d)})
+  (reg-resolver ::c
+                [{:keys [e]}]
+                (println :execute :c)
+                {:c (inc e)})
+  (reg-resolver ::e
+                [{:keys [f]}]
+                (println :execute :e)
+                {:e (inc f)})
+  (reg-resolver ::d
+                [{:keys [f]}]
+                (println :execute :d)
+                (async/<<! (a/timeout 1000))
+                {:d (inc f)})
+  (reg-resolver ::f
+                [{:keys [g k]}]
+                (println :execute :f)
+                {:f (+ g k)})
+  (reg-resolver ::g
+                [{:keys [h]}]
+                (println :execute :g)
+                {:g (inc h)})
+  (reg-resolver ::h
+                [{:keys [i j]}]
+                (println :execute :h)
+                {:h (+ i j)})
+  (reg-resolver ::i
+                []
+                (println :execute :i)
+                {:i 5})
+  (reg-resolver ::j
+                []
+                (println :execute :j)
+                {:j 10})
+  (reg-resolver ::k
+                [{:keys [l]}]
+                (println :execute ::k)
+                {:k (inc l)})
+  (reg-resolver ::l
+                [{:keys [m n]}]
+                (println :execute ::l)
+                {:l (+ m n)})
+  (reg-resolver ::m
+                []
+                (println :execute ::m)
+                (<<! (a/timeout 1000))
+                {:m 5})
+  (reg-resolver ::n
+                []
+                (println :execute ::n)
+                {:n 10})))
