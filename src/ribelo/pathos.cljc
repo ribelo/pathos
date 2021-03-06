@@ -20,7 +20,9 @@
   []
   (reset! cache_ {}))
 
-(defn add-ns-to-map [ns m]
+(defn add-ns-to-map
+  "adding ns to each key in map"
+  [ns m]
   (persistent!
    (reduce-kv
     (fn [acc k v]
@@ -28,7 +30,9 @@
     (transient {})
     m)))
 
-(defn change-ns-in-map [ns m]
+(defn change-ns-in-map
+  "change ns for each key in map"
+  [ns m]
   (persistent!
    (reduce-kv
     (fn [acc k v]
@@ -248,6 +252,8 @@
   )
 
 (defn cheapest-resolver
+  "finding the cheapest resolver for the given `entity`, taking into consideration
+  the `entities` already resolved and all needed `entities`"
   ([entity]
    (cheapest-resolver entity #{} #{entity}))
   ([entity provided]
@@ -292,7 +298,6 @@
   ;;  :in       #{:c :b}}
   )
 
-
 (defn resolver-cost
   "find out the cost of the resolver"
   ([id]
@@ -306,7 +311,6 @@
   (m/find @cache_
     {~id {:memo? ?memo}} ?memo))
 
-;; much faster than meander
 (defn resolver->fn
   "takes the function assigned to the resolver"
   [id]
@@ -318,7 +322,6 @@
   (m/find @cache_
     {~id {:type :resolver}} true))
 
-;; much faster than meander
 (defn resolver-outputs
   "specifies the data produce by the resolver"
   [id]
@@ -388,7 +391,7 @@
   (swap! cache_ dissoc id)
   id)
 
-(defn update-time!
+(defn- update-time!
   "updates the execution cost of the resolver"
   [id ^long ms*]
   (e/swap-in! cache_ [id]
@@ -398,7 +401,7 @@
             (assoc :ms avg)
             (update :ncalls inc))))))
 
-(defmacro with-time-ms
+(defmacro ^:private with-time-ms
   "macro establishes the execution time of the body and returns a vector, where
   the first variable is milliseconds and the second is the body result"
   [& body]
@@ -416,7 +419,7 @@
      (update-time! id ms)
      r)))
 
-(defn satisfies-inputs?
+(defn- satisfies-inputs?
   "checks if the map has all the necessary keys needed for the resolver with the
   given id"
   [id xs]
@@ -430,15 +433,16 @@
 (comment
   (satisfies-inputs? ::person {:db/id :ivan}))
 
-(defn- process-chain
-  "calls the individual resolvers that make up the chain"
-  ([chain] (process-chain chain {}))
-  ([chain args]
-   (reduce
-    (fn [acc id]
-      (merge (execute id acc) acc))
-    args
-    chain)))
+#?(:cljs
+   (defn- process-chain
+     "calls the individual resolvers that make up the chain"
+     ([chain] (process-chain chain {}))
+     ([chain args]
+      (reduce
+       (fn [acc id]
+         (merge (execute id acc) acc))
+       args
+       chain))))
 
 #?(:clj
    (defn- process-chain-async
@@ -522,44 +526,48 @@
 
 (let [conjv (fnil conj [])]
   (def ^:private graph-traversal
-    (fn ([entity] (graph-traversal entity #{}))
-      ([entity provided]
-       (loop [entity* entity rst [] chain [] req #{entity} provides provided]
-         (if entity*
-           (let [{:keys [id in out]} (cheapest-resolver entity* provides (into #{} (remove provides) (conjv rst entity*)))
-                 provides*           (into provides out)
-                 req*                (into req in)
-                 [entity* rst]       (e/vsplit-first (into [] (comp (remove provides*) (distinct)) (into rst in)))]
-             (recur entity*
-                    rst
-                    (e/conj-some chain id)
-                    req*
-                    provides*))
-           (if-not (set/superset? provides req)
-             (timbre/warnf "lack of required entities %s"
-                           (set/difference req provides))
-             {:chain    (into [] (distinct) chain)
-              :provides provides
-              :req      req})))))))
+    (e/memoize
+      (e/ms :mins 15)
+      (fn ([entity] (graph-traversal entity #{}))
+        ([entity provided]
+         (loop [entity* entity rst [] chain [] req #{entity} provides provided]
+           (if entity*
+             (let [{:keys [id in out]} (cheapest-resolver entity* provides (into #{} (remove provides) (conjv rst entity*)))
+                   provides*           (into provides out)
+                   req*                (into req in)
+                   [entity* rst]       (e/vsplit-first (into [] (comp (remove provides*) (distinct)) (into rst in)))]
+               (recur entity*
+                      rst
+                      (e/conj-some chain id)
+                      req*
+                      provides*))
+             (if-not (set/superset? provides req)
+               (timbre/warnf "lack of required entities %s"
+                             (set/difference req provides))
+               {:chain    (into [] (distinct) chain)
+                :provides provides
+                :req      req}))))))))
 
 (def -resolve
-  (fn ([entities]
-      (-resolve entities #{}))
-    ([entities provided]
-     (loop [[entity & entities*] (into [] (remove provided) entities)
-            req*                 #{}
-            provides*            provided
-            chain*               []]
-       (if entity
-         (let [{:keys [chain req provides]} (graph-traversal entity provides*)
-               req*                         (into req* req)
-               provides*                    (into provides* provides)
-               entities*                    (into [] (remove provides*) entities*)]
-           (recur entities*
-                  req*
-                  provides*
-                  (into chain* chain)))
-         (vec (reverse chain*)))))))
+  (e/memoize
+    (e/ms :mins 15)
+    (fn ([entities]
+        (-resolve entities #{}))
+      ([entities provided]
+       (loop [[entity & entities*] (into [] (remove provided) entities)
+              req*                 #{}
+              provides*            provided
+              chain*               []]
+         (if entity
+           (let [{:keys [chain req provides]} (graph-traversal entity provides*)
+                 req*                         (into req* req)
+                 provides*                    (into provides* provides)
+                 entities*                    (into [] (remove provides*) entities*)]
+             (recur entities*
+                    req*
+                    provides*
+                    (into chain* chain)))
+           (vec (reverse chain*))))))))
 
 (defn- selector->keys [selector]
   (m/rewrite selector
