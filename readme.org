@@ -27,7 +27,7 @@ pick up on the examples.
                  :birthday "1975-09-11"}})
 #+end_src
 
-resolvers can be defined identically to =pathom=, except that the registry is central and the name must be a =namedpaced key=
+resolvers can be defined identically to =pathom=, except that the registry is central and the name must be a =namespaced key=
 
 #+begin_src clojure
 (p/reg-resolver ::article-slug
@@ -64,10 +64,6 @@ code inside and you can easily use let and whatever your heart desires
 ;;      :memo? false,
 ;;      :in #{:acme.article/title}})
 
-(macroexpand-1
- '(reg-resolver ::article-title
-    [{:acme/keys [article]}]
-    (-> article :title)))
 (macroexpand-1
  '(reg-resolver ::article-title
     [{:acme/keys [article]}]
