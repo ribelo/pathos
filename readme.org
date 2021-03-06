@@ -47,10 +47,37 @@ one of the main differences from =pathom= is that =pathos= doesn't bother about 
 code inside and you can easily use let and whatever your heart desires
 
 #+begin_src clojure
-(p/reg-resolver ::article-slug
- [{:acme.article/keys [title]}]
- (let [slug (str/replace title #"[^a-z0-9A-Z]" "-")]
-   {:acme.article/slug slug}))
+(macroexpand-1
+ '(reg-resolver ::article-slug
+    [{:acme.article/keys [title]}]
+    (let [slug (str/replace title #"[^a-z0-9A-Z]" "-")]
+      {:acme.article/slug slug})))
+;; => (ribelo.pathos/-reg-resolver
+;;     {:out #{:acme.article/slug},
+;;      :id :ribelo.pathos/article-slug,
+;;      :f
+;;      (clojure.core/fn
+;;       [#:acme.article{:keys [title]}]
+;;       (let
+;;        [slug (str/replace title #"[^a-z0-9A-Z]" "-")]
+;;        #:acme.article{:slug slug})),
+;;      :memo? false,
+;;      :in #{:acme.article/title}})
+
+(macroexpand-1
+ '(reg-resolver ::article-title
+    [{:acme/keys [article]}]
+    (-> article :title)))
+(macroexpand-1
+ '(reg-resolver ::article-title
+    [{:acme/keys [article]}]
+    (-> article :title)))
+;; => (ribelo.pathos/-reg-resolver
+;;     {:out #{:title},
+;;      :id :ribelo.pathos/article-title,
+;;      :f (clojure.core/fn [#:acme{:keys [article]}] (-> article :title)),
+;;      :memo? false,
+;;      :in #{:acme/article}})
 #+end_src
 
 ** invoking resolvers
