@@ -1,6 +1,6 @@
-#+TITLE: Readme
+#+TITLE: pathos
 
-* pathos
+
 
 i love the whole philosophy behind pathom. for a better understanding of what's
 going on underneath, and for fun, i decided to copy the key functionality in the
@@ -14,7 +14,7 @@ production.
 i assume everyone who has come here knows what pathos is, so they will quickly
 pick up on the examples.
 
-** resolvers
+* resolvers
 
 #+begin_src clojure
 ; define a map for indexed access to user data
@@ -80,7 +80,7 @@ code inside and you can easily use let and whatever your heart desires
 ;;      :in #{:acme/article}})
 #+end_src
 
-** invoking resolvers
+* invoking resolvers
 
 unlike =pathom=, resolvers in =pathos= are not records and do not extend =ifn=
 protocol, they cannot be called as regular functions, instead, there is an
@@ -94,7 +94,7 @@ protocol, they cannot be called as regular functions, instead, there is an
 ; => {::path-ext "txt"}
 #+end_src
 
-** optional inputs
+* optional inputs
 
 optional variables can be defined by simply omitting them from =::p/input=
 
@@ -105,7 +105,7 @@ optional variables can be defined by simply omitting them from =::p/input=
   {:user/display-name (or name email)})
 #+end_src
 
-** memoization
+* memoization
 
 =pathos= allows to define a resolver that will be memoized
 
@@ -125,7 +125,7 @@ optional variables can be defined by simply omitting them from =::p/input=
  {:user/display-name (or name email)})
 #+end_src
 
-** async
+* async
 
 the chain of functions assigned to resolvers is always executed asynchronously
 
@@ -247,11 +247,11 @@ the chain of functions assigned to resolvers is always executed asynchronously
 ;; :finish  :ribelo.pathos/a
 #+end_src
 
-** prior art
+* prior art
 
 - [[https://github.com/wilkerlucio/pathom][pathom]]
 - [[https://github.com/day8/re-frame][re-frame]]
 
-** copyright
+* copyright
 
 copyright © 2020 ribelo. distributed under the unlicense.
